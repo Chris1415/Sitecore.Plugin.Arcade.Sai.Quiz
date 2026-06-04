@@ -71,16 +71,6 @@ export const CURATED_QUESTIONS: Question[] = [
     fact: "Discover targets product/commerce discovery; Search handles general site/content search.",
     source: "curated",
   },
-  {
-    id: "g-red",
-    topic: "General Sitecore",
-    difficulty: "hard",
-    q: "What is the exact hex of the canonical Sitecore brand red?",
-    options: ["#DA291C", "#E03127", "#C8102E", "#FF1A1A"],
-    answer: 0,
-    fact: "#DA291C — the precise red used for the Arcade mascot's face. Pixel-perfect on purpose.",
-    source: "curated",
-  },
 
   // ──────────────────────────────────── SitecoreAI ────────────────────────────
   {
@@ -410,13 +400,13 @@ export const CURATED_QUESTIONS: Question[] = [
     source: "curated",
   },
   {
-    id: "f-old-editor",
+    id: "f-red",
     topic: "Fun",
     difficulty: "medium",
-    q: "Before “Pages”, Sitecore's long-running WYSIWYG editor was called…?",
-    options: ["Experience Editor", "Horizon", "Story Editor", "Composer"],
+    q: "What hex powers Sitecorex's red face (and the Arcade accent colour)?",
+    options: ["#DA291C", "#E03127", "#C8102E", "#FF1A1A"],
     answer: 0,
-    fact: "Experience Editor (earlier still: Page Editor). Pages is the cloud-native successor.",
+    fact: "#DA291C — the exact red defined in the Sitecore Arcade brand kit for the mascot.",
     source: "curated",
   },
   {

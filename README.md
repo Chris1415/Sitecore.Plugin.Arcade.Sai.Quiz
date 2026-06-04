@@ -40,6 +40,17 @@ Scoring scales with difficulty — base **100 / 150 / 200** for easy / medium / 
 — plus a time bonus (up to +100) and streak multipliers (×1.5 / ×2 / ×3).
 Grades run **D → S**.
 
+### Quit & leaderboard
+
+- **Quit any time** — a `⤺ QUIT` chip (top-right) or **Esc** during a round drops
+  you back to the start screen.
+- **Leaderboard** — finish a round, enter your name, and your score lands on a
+  **localStorage** leaderboard (no backend; each browser keeps its own board).
+  Every finished round adds an entry. View it any time from the title screen's
+  **🏆 LEADERBOARD** button; your latest entry is highlighted.
+
+![Results + leaderboard](docs/leaderboard.png)
+
 ![Results](docs/results.png)
 
 ## Run locally

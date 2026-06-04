@@ -80,7 +80,7 @@ function Arms({ mood }: { mood: Mood }): ReactElement {
 export function Mascot({ mood = "idle" }: { mood?: Mood }): ReactElement {
   return (
     <svg
-      viewBox="0 0 64 70"
+      viewBox="-3 -3 76 76"
       shapeRendering="crispEdges"
       role="img"
       aria-label={`Sitecorex (${mood})`}

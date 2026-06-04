@@ -19,6 +19,7 @@ import {
   type Question,
   type TenantSnapshot,
 } from "@/lib/arcade/types";
+import { addEntry, loadLeaderboard, type LeaderEntry } from "@/lib/arcade/leaderboard";
 import { useOptionalMarketplace } from "@/lib/arcade/useOptionalMarketplace";
 
 const QUESTIONS_PER_ROUND = 10;
@@ -74,7 +75,7 @@ const HOST_PROMPTS = [
 const HOST_RIGHT = ["Nailed it! 🎉", "Yes! Spot on.", "Sitecore wizard!", "Too easy!", "On fire! 🔥"];
 const HOST_WRONG = ["Ah, not quite…", "Tricky one!", "So close!", "Next time!", "Don't sweat it."];
 
-type Phase = "splash" | "title" | "quiz" | "results";
+type Phase = "splash" | "title" | "quiz" | "results" | "leaderboard";
 
 interface Reveal {
   scoreNote: string | null;
@@ -120,6 +121,11 @@ export function QuizGame() {
   const [muted, setMuted] = useState(false);
   const [track, setTrack] = useState<Track>("mixed");
   const [difficulty, setDifficulty] = useState<DifficultyFilter>("all");
+
+  const [leaderboard, setLeaderboard] = useState<LeaderEntry[]>([]);
+  const [playerName, setPlayerName] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [myEntryId, setMyEntryId] = useState<string | null>(null);
 
   const [deck, setDeck] = useState<Question[]>([]);
   const [idx, setIdx] = useState(0);
@@ -311,6 +317,9 @@ export function QuizGame() {
   const next = useCallback(() => {
     const nextIdx = idx + 1;
     if (nextIdx >= deck.length) {
+      setSubmitted(false);
+      setPlayerName("");
+      setMyEntryId(null);
       setPhase("results");
       Sound.fanfare();
     } else {
@@ -318,17 +327,53 @@ export function QuizGame() {
     }
   }, [idx, deck, present]);
 
+  // ---- quit / leaderboard ----
+  const quitToTitle = useCallback(() => {
+    stopTimer();
+    Sound.select();
+    setPhase("title");
+  }, [stopTimer]);
+
+  const saveScore = useCallback(() => {
+    const name = playerName.trim().slice(0, 24);
+    if (!name) return;
+    const { id, board } = addEntry({
+      name,
+      score,
+      correct: correctCount,
+      total: deck.length,
+      difficulty,
+      track,
+    });
+    setLeaderboard(board.slice(0, 12));
+    setMyEntryId(id);
+    setSubmitted(true);
+    Sound.correct();
+  }, [playerName, score, correctCount, deck.length, difficulty, track]);
+
+  const viewLeaderboard = useCallback(() => {
+    setLeaderboard(loadLeaderboard().slice(0, 12));
+    setMyEntryId(null);
+    Sound.select();
+    setPhase("leaderboard");
+  }, []);
+
   // ---- keyboard ----
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (phase === "title" && (e.key === "Enter" || e.key === " ")) {
         e.preventDefault();
         startGame();
-      } else if (phase === "results" && (e.key === "Enter" || e.key === " ")) {
+      } else if (phase === "results" && submitted && (e.key === "Enter" || e.key === " ")) {
         e.preventDefault();
         startGame();
+      } else if (phase === "leaderboard" && (e.key === "Enter" || e.key === " " || e.key === "Escape")) {
+        e.preventDefault();
+        setPhase("title");
       } else if (phase === "quiz") {
-        if (!answered && ["1", "2", "3", "4"].includes(e.key)) {
+        if (e.key === "Escape") {
+          quitToTitle();
+        } else if (!answered && ["1", "2", "3", "4"].includes(e.key)) {
           const i = Number(e.key) - 1;
           if (i < shownOptions.length) answer(i);
         } else if (answered && (e.key === "Enter" || e.key === " ")) {
@@ -339,7 +384,7 @@ export function QuizGame() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, answered, shownOptions.length, startGame, answer, next]);
+  }, [phase, answered, submitted, shownOptions.length, startGame, answer, next, quitToTitle]);
 
   // arm audio on first pointer interaction (autoplay policy)
   useEffect(() => {
@@ -366,6 +411,24 @@ export function QuizGame() {
   const grade = gradeFor(deck.length ? correctCount / deck.length : 0);
   const availableCount = Math.min(QUESTIONS_PER_ROUND, buildPool(track, difficulty, tenantQs).length);
 
+  const renderLeaderboard = (entries: LeaderEntry[], highlightId: string | null) =>
+    entries.length === 0 ? (
+      <div className="arcade-lb-empty">No scores yet — be the first to finish a round!</div>
+    ) : (
+      <ol className="arcade-lb">
+        {entries.map((e, i) => (
+          <li key={e.id} className={`arcade-lb-row${e.id === highlightId ? " me" : ""}`}>
+            <span className="arcade-lb-rank">{i + 1}</span>
+            <span className="arcade-lb-name">{e.name}</span>
+            <span className="arcade-lb-meta">
+              {e.correct}/{e.total} · {e.track} · {e.difficulty}
+            </span>
+            <span className="arcade-lb-score">{e.score}</span>
+          </li>
+        ))}
+      </ol>
+    );
+
   return (
     <div className="arcade-root" data-arcade-theme={theme}>
       <div className="arcade-crt" aria-hidden />
@@ -375,6 +438,16 @@ export function QuizGame() {
           <span className="arcade-red-ink">S</span>ITECORE <span className="arcade-red-ink">A</span>RCADE
         </div>
         <div className="arcade-topbar-right">
+          {phase === "quiz" && (
+            <button
+              className="arcade-chip wide"
+              onClick={quitToTitle}
+              aria-label="Quit to start"
+              title="Quit to start (Esc)"
+            >
+              ⤺ QUIT
+            </button>
+          )}
           <span className={`arcade-conn ${connClass}`} title="Tenant data source">
             <span className="dot" />
             <span className="label-text">{connText}</span>
@@ -476,9 +549,14 @@ export function QuizGame() {
               </div>
             </div>
 
-            <button className="arcade-btn primary" onClick={startGame}>
-              ▶ START GAME
-            </button>
+            <div className="arcade-title-actions">
+              <button className="arcade-btn primary" onClick={startGame}>
+                ▶ START GAME
+              </button>
+              <button className="arcade-btn small" onClick={viewLeaderboard} type="button">
+                🏆 LEADERBOARD
+              </button>
+            </div>
             <p className="arcade-hint">
               Keys <span className="arcade-kbd">1</span>–<span className="arcade-kbd">4</span> to answer · harder = more
               points
@@ -597,14 +675,74 @@ export function QuizGame() {
                 <small>accuracy</small>
               </div>
             </div>
-            <button className="arcade-btn primary" onClick={startGame} type="button">
-              ↻ PLAY AGAIN
-            </button>
+
+            {!submitted ? (
+              <div className="arcade-name-form">
+                <label className="arcade-name-label" htmlFor="player-name">
+                  Enter your name for the leaderboard
+                </label>
+                <div className="arcade-name-row">
+                  <input
+                    id="player-name"
+                    className="arcade-input"
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        saveScore();
+                      }
+                    }}
+                    placeholder="AAA"
+                    maxLength={24}
+                    autoComplete="off"
+                  />
+                  <button
+                    className="arcade-btn small primary"
+                    onClick={saveScore}
+                    type="button"
+                    disabled={!playerName.trim()}
+                  >
+                    SAVE SCORE
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="arcade-lb-wrap">
+                <div className="arcade-lb-title">🏆 LEADERBOARD</div>
+                {renderLeaderboard(leaderboard, myEntryId)}
+              </div>
+            )}
+
+            <div className="arcade-title-actions">
+              <button className="arcade-btn primary" onClick={startGame} type="button">
+                ↻ PLAY AGAIN
+              </button>
+              {!submitted && (
+                <button className="arcade-btn small" onClick={viewLeaderboard} type="button">
+                  🏆 LEADERBOARD
+                </button>
+              )}
+            </div>
             <p className="arcade-results-footer">
               {live
                 ? `Powered by live data from ${tenantSnap?.sourceLabel}.`
                 : "Running on sample data — connect a tenant in the Cloud Portal to play with yours."}
             </p>
+          </section>
+        )}
+
+        {phase === "leaderboard" && (
+          <section className="arcade-screen arcade-center">
+            <div className="arcade-mascot arcade-title-mascot bob">
+              <Mascot mood="happy" />
+            </div>
+            <h2 className="arcade-results-title">🏆 LEADERBOARD</h2>
+            <p className="arcade-results-score">Top scores on this device</p>
+            <div className="arcade-lb-wrap">{renderLeaderboard(leaderboard, myEntryId)}</div>
+            <button className="arcade-btn primary" onClick={() => setPhase("title")} type="button">
+              ← BACK
+            </button>
           </section>
         )}
       </main>
