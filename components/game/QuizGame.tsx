@@ -160,14 +160,13 @@ export function QuizGame() {
     };
   }, [mkt.status, mkt.client, mkt.appContext]);
 
-  // ---- splash -> title ----
-  useEffect(() => {
-    const t1 = setTimeout(() => Sound.chime(), 200);
-    const t2 = setTimeout(() => setPhase("title"), 1900);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
+  // ---- splash: wait for the player ("press any key to continue") ----
+  // Advancing here is the first user gesture, so it's also where we play the
+  // brand S-chime (audio is blocked until a gesture).
+  const continueFromSplash = useCallback(() => {
+    Sound.resume();
+    Sound.chime();
+    setPhase("title");
   }, []);
 
   // ---- theme + mute side effects ----
@@ -361,7 +360,12 @@ export function QuizGame() {
   // ---- keyboard ----
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (phase === "title" && (e.key === "Enter" || e.key === " ")) {
+      if (phase === "splash") {
+        // Any key advances — but ignore lone modifier presses.
+        if (["Shift", "Control", "Alt", "Meta", "CapsLock", "Tab"].includes(e.key)) return;
+        e.preventDefault();
+        continueFromSplash();
+      } else if (phase === "title" && (e.key === "Enter" || e.key === " ")) {
         e.preventDefault();
         startGame();
       } else if (phase === "results" && submitted && (e.key === "Enter" || e.key === " ")) {
@@ -384,7 +388,7 @@ export function QuizGame() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, answered, submitted, shownOptions.length, startGame, answer, next, quitToTitle]);
+  }, [phase, answered, submitted, shownOptions.length, startGame, answer, next, quitToTitle, continueFromSplash]);
 
   // arm audio on first pointer interaction (autoplay policy)
   useEffect(() => {
@@ -485,6 +489,9 @@ export function QuizGame() {
               <span className="arcade-red-ink">S</span>ITECORE <span className="arcade-red-ink">A</span>RCADE
             </div>
             <div className="arcade-tag">Play with your tenant.</div>
+            <button className="arcade-press-key" onClick={continueFromSplash} type="button">
+              ▸ Press any key to continue
+            </button>
           </section>
         )}
 
