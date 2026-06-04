@@ -137,7 +137,8 @@ export function buildTenantQuestions(snap: TenantSnapshot, max = 4): Question[] 
     const opts = [top, ...byPagesDesc.slice(1, 4)].map((s) => s.displayName);
     out.push({
       id: "t-most-pages",
-      category: "Your tenant",
+      topic: "SitecoreAI",
+      difficulty: "easy",
       q: `Which site in ${label} has the MOST pages?`,
       options: opts,
       answer: 0,
@@ -152,7 +153,8 @@ export function buildTenantQuestions(snap: TenantSnapshot, max = 4): Question[] 
     const opts = [bottom, ...byPagesDesc.slice(0, 3)].map((s) => s.displayName);
     out.push({
       id: "t-fewest-pages",
-      category: "Your tenant",
+      topic: "SitecoreAI",
+      difficulty: "easy",
       q: `Which site in ${label} has the FEWEST pages?`,
       options: opts,
       answer: 0,
@@ -167,7 +169,8 @@ export function buildTenantQuestions(snap: TenantSnapshot, max = 4): Question[] 
     const opts = numberDistractors(n, 3).map(String);
     out.push({
       id: "t-site-count",
-      category: "Your tenant",
+      topic: "SitecoreAI",
+      difficulty: "easy",
       q: `How many sites does ${label} expose to the quiz?`,
       options: opts,
       answer: 0,
@@ -184,7 +187,8 @@ export function buildTenantQuestions(snap: TenantSnapshot, max = 4): Question[] 
     if (opts.length >= 2) {
       out.push({
         id: "t-site-language",
-        category: "Your tenant",
+        topic: "SitecoreAI",
+      difficulty: "easy",
         q: `What is the default language of “${target.displayName}”?`,
         options: opts,
         answer: 0,

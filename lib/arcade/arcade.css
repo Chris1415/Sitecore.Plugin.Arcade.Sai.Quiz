@@ -18,7 +18,7 @@
   --arcade-fg: var(--arcade-bone);
   --arcade-fg-dim: var(--arcade-stone);
 
-  --pixel: var(--font-pixel), "VT323", "Courier New", monospace;
+  --pixel: "VT323", "Courier New", monospace;
   --radius: 10px;
 
   position: fixed;
@@ -423,6 +423,72 @@
   background: transparent;
   color: var(--arcade-fg-dim);
   border-color: var(--arcade-stone);
+}
+.arcade-pill.diff-easy {
+  background: var(--arcade-mint);
+  color: var(--arcade-night);
+}
+.arcade-pill.diff-medium {
+  background: var(--arcade-gold);
+  color: var(--arcade-night);
+}
+.arcade-pill.diff-hard {
+  background: var(--arcade-red);
+  color: #fff;
+}
+
+/* title-screen pickers (track + difficulty) */
+.arcade-pickers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px 26px;
+  margin: 0 auto 20px;
+  max-width: 640px;
+}
+.arcade-pick-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.arcade-pick-label {
+  font-size: 15px;
+  letter-spacing: 2px;
+  color: var(--arcade-fg-dim);
+}
+.arcade-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  border: 3px solid var(--arcade-fg);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--arcade-bg) 85%, transparent);
+  padding: 4px;
+  gap: 4px;
+}
+.arcade-seg-btn {
+  font-family: var(--pixel);
+  font-size: clamp(16px, 2.6vw, 20px);
+  letter-spacing: 1px;
+  cursor: pointer;
+  color: var(--arcade-fg);
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 7px;
+  padding: 4px 12px;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.06s ease;
+}
+.arcade-seg-btn:hover {
+  background: color-mix(in srgb, var(--arcade-fg) 12%, transparent);
+}
+.arcade-seg-btn:active {
+  transform: translateY(1px);
+}
+.arcade-seg-btn.sel {
+  background: var(--arcade-red);
+  color: #fff;
+  border-color: var(--arcade-fg);
 }
 .arcade-question {
   font-size: clamp(24px, 4.2vw, 36px);

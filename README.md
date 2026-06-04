@@ -22,8 +22,23 @@ it into quiz questions. When it runs standalone (local dev), it uses bundled
 
 ![A live tenant question](docs/tenant-question.png)
 
-Each round is **4 tenant questions + 6 curated** = 10, shuffled. Faster answers
-score more; streaks multiply (×1.5 / ×2 / ×3); grades run **D → S**.
+### Tracks, topics & difficulty
+
+Pick a **Track** and a **Difficulty** on the title screen:
+
+- **Track** — `Mixed` · `Fun` (light, culture, easter-eggs) · `Serious` (the four real topics)
+- **Difficulty** — `All` · `Easy` · `Medium` · `Hard`, with a colored badge on every question
+
+![Title screen with track + difficulty pickers](docs/question.png)
+
+Curated questions are organised across four serious topics — **General Sitecore**,
+**SitecoreAI**, **Marketplace SDK**, **Content SDK** — plus a **Fun** track.
+The pickers filter the round (with graceful fallback so a thin cell never strands
+you). Each round is up to **4 tenant questions + curated fill = 10**, shuffled.
+
+Scoring scales with difficulty — base **100 / 150 / 200** for easy / medium / hard
+— plus a time bonus (up to +100) and streak multipliers (×1.5 / ×2 / ×3).
+Grades run **D → S**.
 
 ![Results](docs/results.png)
 

@@ -13,14 +13,56 @@ import {
   buildTenantQuestions,
   fetchTenantSnapshot,
 } from "@/lib/arcade/tenant-source";
-import type { Question, TenantSnapshot } from "@/lib/arcade/types";
+import {
+  BASE_POINTS_BY_DIFFICULTY,
+  type DifficultyFilter,
+  type Question,
+  type TenantSnapshot,
+} from "@/lib/arcade/types";
 import { useOptionalMarketplace } from "@/lib/arcade/useOptionalMarketplace";
 
 const QUESTIONS_PER_ROUND = 10;
 const TIME_PER_Q = 15;
-const BASE_POINTS = 100;
 const TIME_BONUS_MAX = 100;
 const MAX_TENANT_QUESTIONS = 4;
+
+/** Track = the Fun vs Serious split. Serious = the four real Sitecore topics. */
+type Track = "mixed" | "fun" | "serious";
+
+const TRACKS: { id: Track; label: string }[] = [
+  { id: "mixed", label: "MIXED" },
+  { id: "fun", label: "FUN" },
+  { id: "serious", label: "SERIOUS" },
+];
+const DIFFICULTIES: { id: DifficultyFilter; label: string }[] = [
+  { id: "all", label: "ALL" },
+  { id: "easy", label: "EASY" },
+  { id: "medium", label: "MEDIUM" },
+  { id: "hard", label: "HARD" },
+];
+
+function inTrack(q: Question, track: Track): boolean {
+  if (track === "mixed") return true;
+  if (track === "fun") return q.topic === "Fun";
+  return q.topic !== "Fun"; // serious
+}
+
+function filterPool(all: Question[], track: Track, difficulty: DifficultyFilter): Question[] {
+  return all.filter((q) => inTrack(q, track) && (difficulty === "all" || q.difficulty === difficulty));
+}
+
+/**
+ * Build the playable pool for a track + difficulty, with graceful fallbacks so a
+ * thin or empty cell never strands the player on an empty deck.
+ */
+function buildPool(track: Track, difficulty: DifficultyFilter, tenantQs: Question[]): Question[] {
+  const all = [...tenantQs, ...CURATED_QUESTIONS];
+  let pool = filterPool(all, track, difficulty);
+  if (pool.length === 0) pool = filterPool(all, track, "all"); // drop difficulty
+  if (pool.length === 0) pool = filterPool(all, "mixed", difficulty); // drop track
+  if (pool.length === 0) pool = all.slice();
+  return pool;
+}
 
 const HOST_PROMPTS = [
   "Here's one for you…",
@@ -76,6 +118,8 @@ export function QuizGame() {
   const [phase, setPhase] = useState<Phase>("splash");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [muted, setMuted] = useState(false);
+  const [track, setTrack] = useState<Track>("mixed");
+  const [difficulty, setDifficulty] = useState<DifficultyFilter>("all");
 
   const [deck, setDeck] = useState<Question[]>([]);
   const [idx, setIdx] = useState(0);
@@ -208,10 +252,11 @@ export function QuizGame() {
 
   const startGame = useCallback(() => {
     Sound.resume();
-    const tq = tenantQs.slice(0, MAX_TENANT_QUESTIONS);
+    const pool = buildPool(track, difficulty, tenantQs);
+    const tq = pool.filter((q) => q.source === "tenant").slice(0, MAX_TENANT_QUESTIONS);
+    const rest = shuffle(pool.filter((q) => q.source !== "tenant"));
     const needed = Math.max(0, QUESTIONS_PER_ROUND - tq.length);
-    const curated = shuffle(CURATED_QUESTIONS).slice(0, needed);
-    const newDeck = shuffle([...tq, ...curated]).slice(0, QUESTIONS_PER_ROUND);
+    const newDeck = shuffle([...tq, ...rest.slice(0, needed)]).slice(0, QUESTIONS_PER_ROUND);
     setDeck(newDeck);
     setScore(0);
     setStreak(0);
@@ -220,7 +265,7 @@ export function QuizGame() {
     Sound.start();
     setPhase("quiz");
     present(newDeck, 0);
-  }, [tenantQs, present]);
+  }, [track, difficulty, tenantQs, present]);
 
   const answer = useCallback(
     (choice: number) => {
@@ -234,8 +279,9 @@ export function QuizGame() {
       const correct = choice === correctIndex;
       if (correct) {
         const mult = multiplierFromStreak(streak);
+        const base = BASE_POINTS_BY_DIFFICULTY[q.difficulty];
         const timeBonus = Math.round((Math.max(0, timeLeftRef.current) / TIME_PER_Q) * TIME_BONUS_MAX);
-        const gained = Math.round((BASE_POINTS + timeBonus) * mult);
+        const gained = Math.round((base + timeBonus) * mult);
         setScore((v) => v + gained);
         setCorrectCount((v) => v + 1);
         setStreak((v) => {
@@ -318,6 +364,7 @@ export function QuizGame() {
         : "Sample tenant";
 
   const grade = gradeFor(deck.length ? correctCount / deck.length : 0);
+  const availableCount = Math.min(QUESTIONS_PER_ROUND, buildPool(track, difficulty, tenantQs).length);
 
   return (
     <div className="arcade-root" data-arcade-theme={theme}>
@@ -379,18 +426,66 @@ export function QuizGame() {
               <span className="arcade-title-accent">SAI QUIZ</span>
             </h1>
             <p className="arcade-sub">
-              {QUESTIONS_PER_ROUND} questions — Sitecore trivia mixed with facts about{" "}
-              {live ? <strong>{tenantSnap?.sourceLabel}</strong> : "your tenant"}. Beat the clock.
+              {availableCount} questions ·{" "}
+              {track === "fun" ? "Fun" : track === "serious" ? "Serious" : "Mixed"} ·{" "}
+              {difficulty === "all" ? "All levels" : difficulty[0].toUpperCase() + difficulty.slice(1)}
+              {live && (
+                <>
+                  {" "}
+                  · live data from <strong>{tenantSnap?.sourceLabel}</strong>
+                </>
+              )}
             </p>
+
+            <div className="arcade-pickers">
+              <div className="arcade-pick-group">
+                <span className="arcade-pick-label">TRACK</span>
+                <div className="arcade-seg">
+                  {TRACKS.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className={`arcade-seg-btn ${track === t.id ? "sel" : ""}`}
+                      onClick={() => {
+                        setTrack(t.id);
+                        Sound.select();
+                      }}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="arcade-pick-group">
+                <span className="arcade-pick-label">DIFFICULTY</span>
+                <div className="arcade-seg">
+                  {DIFFICULTIES.map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      className={`arcade-seg-btn ${difficulty === d.id ? "sel" : ""}`}
+                      onClick={() => {
+                        setDifficulty(d.id);
+                        Sound.select();
+                      }}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <button className="arcade-btn primary" onClick={startGame}>
               ▶ START GAME
             </button>
             <p className="arcade-hint">
-              Keys <span className="arcade-kbd">1</span>–<span className="arcade-kbd">4</span> to answer · faster = more
-              points{" "}
+              Keys <span className="arcade-kbd">1</span>–<span className="arcade-kbd">4</span> to answer · harder = more
+              points
               {tenantQs.length > 0 && (
                 <>
-                  · <span style={{ color: "var(--arcade-mint)" }}>{tenantQs.length} tenant questions loaded</span>
+                  {" "}
+                  · <span style={{ color: "var(--arcade-mint)" }}>{tenantQs.length} tenant questions ready</span>
                 </>
               )}
             </p>
@@ -434,10 +529,9 @@ export function QuizGame() {
 
               <div>
                 <div className="arcade-tags">
-                  <span className="arcade-pill cat">{q.category}</span>
-                  <span className={`arcade-pill ${q.source === "tenant" ? "tenant" : "curated"}`}>
-                    {q.source === "tenant" ? "● from SDK" : "curated"}
-                  </span>
+                  <span className="arcade-pill cat">{q.topic}</span>
+                  <span className={`arcade-pill diff-${q.difficulty}`}>{q.difficulty.toUpperCase()}</span>
+                  {q.source === "tenant" && <span className="arcade-pill tenant">● from SDK</span>}
                 </div>
                 <h2 className="arcade-question">{q.q}</h2>
                 <div className="arcade-options">
