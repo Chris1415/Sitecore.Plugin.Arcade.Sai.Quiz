@@ -157,9 +157,12 @@
 .arcade-stage {
   flex: 1;
   display: flex;
-  align-items: center;
+  /* `safe center` keeps short screens centered but aligns to the TOP when the
+     content is taller than the stage — without it, centered overflow clips the
+     top (the HUD) above the viewport and it can't be scrolled into view. */
+  align-items: safe center;
   justify-content: center;
-  padding: 24px 18px;
+  padding: 14px 18px;
   position: relative;
   z-index: 5;
   overflow-y: auto;
@@ -224,15 +227,15 @@
   margin-top: 4px;
 }
 .arcade-title-mascot {
-  width: 130px;
-  height: 140px;
+  width: 104px;
+  height: 112px;
   margin: 0 auto;
 }
 .arcade-game-title {
-  font-size: clamp(40px, 9vw, 76px);
+  font-size: clamp(34px, 6.4vw, 58px);
   line-height: 0.92;
   letter-spacing: 2px;
-  margin: 6px 0 4px;
+  margin: 4px 0 2px;
   text-shadow: 4px 4px 0 var(--arcade-red);
 }
 .arcade-title-accent {
@@ -240,14 +243,14 @@
   text-shadow: 4px 4px 0 color-mix(in srgb, var(--arcade-fg) 30%, transparent);
 }
 .arcade-sub {
-  font-size: clamp(18px, 3vw, 24px);
+  font-size: clamp(17px, 2.6vw, 22px);
   color: var(--arcade-fg-dim);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .arcade-hint {
-  margin-top: 16px;
+  margin-top: 10px;
   color: var(--arcade-fg-dim);
-  font-size: 18px;
+  font-size: 17px;
 }
 .arcade-kbd {
   font-family: var(--pixel);
@@ -261,12 +264,12 @@
 /* buttons */
 .arcade-btn {
   font-family: var(--pixel);
-  font-size: clamp(22px, 3.5vw, 28px);
+  font-size: clamp(20px, 3vw, 26px);
   letter-spacing: 2px;
   cursor: pointer;
   border: 4px solid var(--arcade-fg);
   border-radius: var(--radius);
-  padding: 10px 28px;
+  padding: 9px 26px;
   color: var(--arcade-fg);
   background: var(--arcade-bg);
   box-shadow: 5px 5px 0 var(--arcade-fg);
@@ -296,8 +299,8 @@
   border: 3px solid var(--arcade-fg);
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--arcade-bg) 85%, transparent);
-  padding: 10px 16px;
-  margin-bottom: 12px;
+  padding: 7px 14px;
+  margin-bottom: 9px;
 }
 .arcade-hud-cell {
   display: flex;
@@ -314,7 +317,7 @@
   color: var(--arcade-fg-dim);
 }
 .arcade-hud-value {
-  font-size: clamp(26px, 5vw, 36px);
+  font-size: clamp(22px, 4vw, 30px);
   line-height: 1;
 }
 .arcade-hud-dim {
@@ -348,7 +351,7 @@
   border-radius: 8px;
   overflow: hidden;
   background: color-mix(in srgb, var(--arcade-fg) 10%, transparent);
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 .arcade-timer-bar {
   height: 100%;
@@ -371,8 +374,8 @@
   text-align: center;
 }
 .arcade-quiz-mascot {
-  width: 120px;
-  height: 130px;
+  width: 96px;
+  height: 104px;
   margin: 0 auto;
 }
 .arcade-speech {
@@ -442,8 +445,8 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 14px 26px;
-  margin: 0 auto 20px;
+  gap: 10px 26px;
+  margin: 0 auto 14px;
   max-width: 640px;
 }
 .arcade-pick-group {
@@ -638,22 +641,22 @@
   text-align: center;
 }
 .arcade-question {
-  font-size: clamp(24px, 4.2vw, 36px);
-  line-height: 1.05;
-  margin-bottom: 16px;
+  font-size: clamp(22px, 3.4vw, 30px);
+  line-height: 1.08;
+  margin-bottom: 12px;
 }
 
 /* options */
 .arcade-options {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 .arcade-option {
   display: flex;
   align-items: center;
   gap: 12px;
   font-family: var(--pixel);
-  font-size: clamp(20px, 3vw, 26px);
+  font-size: clamp(18px, 2.6vw, 23px);
   text-align: left;
   width: 100%;
   cursor: pointer;
@@ -661,7 +664,7 @@
   background: var(--arcade-bg);
   border: 3px solid var(--arcade-fg);
   border-radius: var(--radius);
-  padding: 10px 14px;
+  padding: 8px 12px;
   box-shadow: 4px 4px 0 color-mix(in srgb, var(--arcade-fg) 35%, transparent);
   transition: transform 0.06s ease, background 0.12s ease, box-shadow 0.06s ease;
 }
@@ -679,12 +682,12 @@
 .arcade-option-key {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 27px;
+  height: 27px;
   flex: none;
   border: 2px solid currentColor;
   border-radius: 6px;
-  font-size: 18px;
+  font-size: 17px;
 }
 .arcade-option.correct {
   background: var(--arcade-mint);
@@ -712,14 +715,14 @@
 
 /* reveal */
 .arcade-reveal {
-  margin-top: 16px;
+  margin-top: 10px;
   text-align: center;
   animation: arcade-pop 0.3s ease;
 }
 .arcade-reveal-points {
-  font-size: 26px;
+  font-size: 23px;
   letter-spacing: 1px;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .arcade-reveal-points.good {
   color: var(--arcade-gold);
@@ -728,23 +731,23 @@
   color: var(--arcade-fg-dim);
 }
 .arcade-reveal-text {
-  font-size: 20px;
+  font-size: 18px;
   color: var(--arcade-fg-dim);
   max-width: 620px;
-  margin: 0 auto 12px;
+  margin: 0 auto 10px;
   border-top: 2px dashed var(--arcade-stone);
   border-bottom: 2px dashed var(--arcade-stone);
-  padding: 8px 0;
+  padding: 6px 0;
 }
 
 /* results */
 .arcade-grade {
   display: grid;
   place-items: center;
-  width: 92px;
-  height: 92px;
-  margin: 6px auto 8px;
-  font-size: 60px;
+  width: 76px;
+  height: 76px;
+  margin: 4px auto 6px;
+  font-size: 50px;
   line-height: 1;
   color: var(--arcade-night);
   background: var(--arcade-gold);
@@ -761,24 +764,24 @@
   background: var(--arcade-stone);
 }
 .arcade-results-title {
-  font-size: clamp(34px, 6vw, 52px);
-  margin-bottom: 4px;
+  font-size: clamp(28px, 5vw, 42px);
+  margin-bottom: 3px;
   text-shadow: 3px 3px 0 var(--arcade-red);
 }
 .arcade-results-score {
-  font-size: 24px;
+  font-size: 21px;
   color: var(--arcade-fg-dim);
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 .arcade-results-score strong {
   color: var(--arcade-gold);
-  font-size: 32px;
+  font-size: 28px;
 }
 .arcade-results-stats {
   display: flex;
   justify-content: center;
-  gap: 28px;
-  margin-bottom: 22px;
+  gap: 24px;
+  margin-bottom: 14px;
   flex-wrap: wrap;
 }
 .arcade-results-stats div {
@@ -786,18 +789,18 @@
   flex-direction: column;
 }
 .arcade-results-stats span {
-  font-size: 34px;
+  font-size: 28px;
   color: var(--arcade-mint);
 }
 .arcade-results-stats small {
-  font-size: 16px;
+  font-size: 15px;
   color: var(--arcade-fg-dim);
   letter-spacing: 1px;
 }
 .arcade-results-footer {
-  margin-top: 18px;
+  margin-top: 12px;
   color: var(--arcade-fg-dim);
-  font-size: 18px;
+  font-size: 17px;
 }
 
 /* responsive */
