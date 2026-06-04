@@ -19,7 +19,7 @@ import {
   type Question,
   type TenantSnapshot,
 } from "@/lib/arcade/types";
-import { addEntry, loadLeaderboard, type LeaderEntry } from "@/lib/arcade/leaderboard";
+import { fetchBoard, submitScore, type BoardSource, type LeaderEntry } from "@/lib/arcade/leaderboard";
 import { useOptionalMarketplace } from "@/lib/arcade/useOptionalMarketplace";
 
 const QUESTIONS_PER_ROUND = 10;
@@ -123,8 +123,10 @@ export function QuizGame() {
   const [difficulty, setDifficulty] = useState<DifficultyFilter>("all");
 
   const [leaderboard, setLeaderboard] = useState<LeaderEntry[]>([]);
+  const [boardSource, setBoardSource] = useState<BoardSource>("local");
   const [playerName, setPlayerName] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [savingScore, setSavingScore] = useState(false);
   const [myEntryId, setMyEntryId] = useState<string | null>(null);
 
   const [deck, setDeck] = useState<Question[]>([]);
@@ -317,6 +319,7 @@ export function QuizGame() {
     const nextIdx = idx + 1;
     if (nextIdx >= deck.length) {
       setSubmitted(false);
+      setSavingScore(false);
       setPlayerName("");
       setMyEntryId(null);
       setPhase("results");
@@ -333,10 +336,11 @@ export function QuizGame() {
     setPhase("title");
   }, [stopTimer]);
 
-  const saveScore = useCallback(() => {
+  const saveScore = useCallback(async () => {
     const name = playerName.trim().slice(0, 24);
-    if (!name) return;
-    const { id, board } = addEntry({
+    if (!name || savingScore) return;
+    setSavingScore(true);
+    const result = await submitScore({
       name,
       score,
       correct: correctCount,
@@ -344,16 +348,20 @@ export function QuizGame() {
       difficulty,
       track,
     });
-    setLeaderboard(board.slice(0, 12));
-    setMyEntryId(id);
+    setLeaderboard(result.entries);
+    setBoardSource(result.source);
+    setMyEntryId(result.myId);
     setSubmitted(true);
+    setSavingScore(false);
     Sound.correct();
-  }, [playerName, score, correctCount, deck.length, difficulty, track]);
+  }, [playerName, savingScore, score, correctCount, deck.length, difficulty, track]);
 
-  const viewLeaderboard = useCallback(() => {
-    setLeaderboard(loadLeaderboard().slice(0, 12));
-    setMyEntryId(null);
+  const viewLeaderboard = useCallback(async () => {
     Sound.select();
+    const result = await fetchBoard();
+    setLeaderboard(result.entries);
+    setBoardSource(result.source);
+    setMyEntryId(null);
     setPhase("leaderboard");
   }, []);
 
@@ -708,15 +716,20 @@ export function QuizGame() {
                     className="arcade-btn small primary"
                     onClick={saveScore}
                     type="button"
-                    disabled={!playerName.trim()}
+                    disabled={!playerName.trim() || savingScore}
                   >
-                    SAVE SCORE
+                    {savingScore ? "SAVING…" : "SAVE SCORE"}
                   </button>
                 </div>
               </div>
             ) : (
               <div className="arcade-lb-wrap">
-                <div className="arcade-lb-title">🏆 LEADERBOARD</div>
+                <div className="arcade-lb-title">
+                  🏆 LEADERBOARD{" "}
+                  <span className="arcade-lb-source">
+                    {boardSource === "server" ? "· 🌐 global" : "· 💾 this device"}
+                  </span>
+                </div>
                 {renderLeaderboard(leaderboard, myEntryId)}
               </div>
             )}
@@ -745,7 +758,9 @@ export function QuizGame() {
               <Mascot mood="happy" />
             </div>
             <h2 className="arcade-results-title">🏆 LEADERBOARD</h2>
-            <p className="arcade-results-score">Top scores on this device</p>
+            <p className="arcade-results-score">
+              {boardSource === "server" ? "🌐 Global top scores" : "💾 Top scores on this device"}
+            </p>
             <div className="arcade-lb-wrap">{renderLeaderboard(leaderboard, myEntryId)}</div>
             <button className="arcade-btn primary" onClick={() => setPhase("title")} type="button">
               ← BACK

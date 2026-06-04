@@ -591,6 +591,11 @@
   color: var(--arcade-gold);
   margin-bottom: 10px;
 }
+.arcade-lb-source {
+  font-size: 16px;
+  letter-spacing: 1px;
+  color: var(--arcade-fg-dim);
+}
 .arcade-lb {
   list-style: none;
   margin: 0 auto;

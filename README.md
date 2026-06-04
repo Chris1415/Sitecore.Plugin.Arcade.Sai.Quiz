@@ -44,12 +44,30 @@ Grades run **D → S**.
 
 - **Quit any time** — a `⤺ QUIT` chip (top-right) or **Esc** during a round drops
   you back to the start screen.
-- **Leaderboard** — finish a round, enter your name, and your score lands on a
-  **localStorage** leaderboard (no backend; each browser keeps its own board).
-  Every finished round adds an entry. View it any time from the title screen's
-  **🏆 LEADERBOARD** button; your latest entry is highlighted.
+- **Leaderboard** — finish a round, enter your name, and your score lands on the
+  leaderboard. View it any time from the title's **🏆 LEADERBOARD** button; your
+  latest entry is highlighted. The board shows whether it's **🌐 global** (shared
+  server) or **💾 this device** (local fallback).
 
 ![Results + leaderboard](docs/leaderboard.png)
+
+#### Shared (global) leaderboard — optional
+
+By default the leaderboard is **per-browser** (`localStorage`) — each device keeps
+its own. To make it **global** so everyone sees everyone's scores, connect a
+**Vercel KV** store (or any Upstash Redis):
+
+1. On Vercel → **Storage** → create a **KV** store and connect it to this project.
+   Vercel injects `KV_REST_API_URL` / `KV_REST_API_TOKEN` automatically.
+   (Local dev: `vercel env pull .env.local`. Raw Upstash also works via
+   `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` — see `.env.example`.)
+2. Deploy. `app/api/leaderboard` (GET/POST) reads/writes a Redis sorted set and
+   the client uses it automatically; the board flips to **🌐 global**.
+
+The seam degrades gracefully: with no KV configured (or if it's unreachable), the
+API returns `configured:false` and the client falls back to the local board — so
+the game always runs. **Note:** "global" only matters when everyone opens the same
+**deployed** URL; on separate `localhost` copies each person still has their own.
 
 ![Results](docs/results.png)
 
